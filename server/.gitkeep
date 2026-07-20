@@ -1,0 +1,10 @@
+# Server — MiniOS Kernel
+
+Backend Node.js pendiente de implementación.
+
+Próximos módulos:
+- `kernel/scheduler/` — Round Robin y otros algoritmos
+- `kernel/memory/` — Paginación y page faults
+- `kernel/process/` — PCB y estados de proceso
+- `simulation/` — Loop de ticks y eventos
+- `api/` — REST + WebSocket
