@@ -7,12 +7,18 @@ import {
 
 interface ProcessTableProps {
   processes: Process[]
+  onTerminateProcess: (pid: number) => void
+  onCleanupProcess: (pid: number) => void
 }
 
-export function ProcessTable({ processes }: ProcessTableProps) {
+export function ProcessTable({
+  processes,
+  onTerminateProcess,
+  onCleanupProcess,
+}: ProcessTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] border-collapse text-sm">
+      <table className="w-full min-w-[860px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-700/60 text-left">
             {[
@@ -24,6 +30,7 @@ export function ProcessTable({ processes }: ProcessTableProps) {
               'Disco',
               'Prioridad',
               'Páginas',
+              'Acciones',
             ].map((col) => (
               <th
                 key={col}
@@ -89,6 +96,24 @@ export function ProcessTable({ processes }: ProcessTableProps) {
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-violet-400">
                   {process.pages}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onTerminateProcess(process.pid)}
+                      className="rounded-md bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold text-amber-200 ring-1 ring-amber-500/30 transition-colors hover:bg-amber-500/25"
+                    >
+                      Cerrar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onCleanupProcess(process.pid)}
+                      className="rounded-md bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-200 ring-1 ring-cyan-500/30 transition-colors hover:bg-cyan-500/25"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
                 </td>
               </tr>
             )

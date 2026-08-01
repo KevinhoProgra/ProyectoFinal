@@ -1,18 +1,66 @@
+import type { SchedulerAlgorithm } from '../../types'
+
 interface SimulationControlsProps {
+  algorithm: SchedulerAlgorithm
+  quantum: number
   isRunning: boolean
   onToggle: () => void
   onStep: () => void
   onReset: () => void
+  onAlgorithmChange: (algorithm: SchedulerAlgorithm) => void
+  onQuantumChange: (quantum: number) => void
 }
 
+const algorithmOptions: SchedulerAlgorithm[] = [
+  'Round Robin',
+  'FCFS',
+  'SJF',
+  'Prioridades',
+]
+
 export function SimulationControls({
+  algorithm,
+  quantum,
   isRunning,
   onToggle,
   onStep,
   onReset,
+  onAlgorithmChange,
+  onQuantumChange,
 }: SimulationControlsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2 rounded-lg bg-slate-800/50 px-2.5 py-1.5 ring-1 ring-slate-700/50">
+        <label className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+          Algoritmo
+        </label>
+        <select
+          value={algorithm}
+          onChange={(event) => onAlgorithmChange(event.target.value as SchedulerAlgorithm)}
+          className="rounded-md bg-slate-900 px-2 py-1 text-xs text-slate-200 outline-none ring-1 ring-slate-700"
+        >
+          {algorithmOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-lg bg-slate-800/50 px-2.5 py-1.5 ring-1 ring-slate-700/50">
+        <label className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+          Quantum
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={10}
+          value={quantum}
+          onChange={(event) => onQuantumChange(Number(event.target.value) || 1)}
+          className="w-16 rounded-md bg-slate-900 px-2 py-1 text-xs text-slate-200 outline-none ring-1 ring-slate-700"
+        />
+      </div>
+
       <button
         type="button"
         onClick={onToggle}

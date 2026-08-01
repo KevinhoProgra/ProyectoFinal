@@ -6,16 +6,27 @@ export type ProcessState =
   | 'terminado'
 
 export type Priority = 'alta' | 'media' | 'baja'
+export type SchedulerAlgorithm =
+  | 'Round Robin'
+  | 'FCFS'
+  | 'SJF'
+  | 'Prioridades'
 
 export interface Process {
   pid: number
   name: string
+  appId?: string
   state: ProcessState
   cpuPercent: number
   ramMB: number
   diskIO: string
   priority: Priority
   pages: number
+  burst: number
+  remainingBurst: number
+  arrivalOrder: number
+  quantumUsed: number
+  blockedTicks: number
 }
 
 export interface SystemStats {
@@ -25,7 +36,7 @@ export interface SystemStats {
   diskPercent: number
   runningProcess: string
   runningState: ProcessState
-  algorithm: string
+  algorithm: SchedulerAlgorithm
   quantum: number
   tick: number
   pageFaults: number

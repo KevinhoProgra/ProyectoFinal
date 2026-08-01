@@ -1,4 +1,4 @@
-import type { Priority, ProcessState } from '../../types'
+import type { Priority, ProcessState } from '../types'
 
 const stateStyles: Record<
   ProcessState,
