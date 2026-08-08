@@ -15,6 +15,7 @@ export const initialProcesses: Process[] = [
     arrivalOrder: 1,
     quantumUsed: 0,
     blockedTicks: 0,
+    memoryLocation: 'ram',
   },
   {
     pid: 2,
@@ -30,6 +31,7 @@ export const initialProcesses: Process[] = [
     arrivalOrder: 2,
     quantumUsed: 0,
     blockedTicks: 0,
+    memoryLocation: 'ram',
   },
   {
     pid: 3,
@@ -45,13 +47,14 @@ export const initialProcesses: Process[] = [
     arrivalOrder: 3,
     quantumUsed: 0,
     blockedTicks: 1,
+    memoryLocation: 'ram',
   },
 ]
 
 export const initialSystemStats: SystemStats = {
   cpuPercent: 65,
   ramUsedGB: 2.4,
-  ramTotalGB: 4,
+  ramTotalGB: 1.5,
   diskPercent: 30,
   runningProcess: 'Chrome',
   runningState: 'ejecutando',
@@ -59,6 +62,11 @@ export const initialSystemStats: SystemStats = {
   quantum: 3,
   tick: 142,
   pageFaults: 7,
+  swapUsedGB: 0,
+  swapTotalGB: 8,
+  swapIns: 0,
+  swapOuts: 0,
+  memoryEvent: null,
 }
 
 export const desktopApps: DesktopApp[] = [
@@ -124,5 +132,40 @@ export const desktopApps: DesktopApp[] = [
     icon: '⚙️',
     color: 'from-indigo-500 to-violet-900',
     description: 'Configuración del sistema',
+  },
+  {
+    id: 'editor',
+    name: 'Editor',
+    icon: '📝',
+    color: 'from-orange-500 to-red-700',
+    description: 'Editor de texto',
+  },
+  {
+    id: 'mail',
+    name: 'Correo',
+    icon: '✉️',
+    color: 'from-sky-500 to-blue-800',
+    description: 'Cliente de correo',
+  },
+  {
+    id: 'game',
+    name: 'Juego',
+    icon: '🎮',
+    color: 'from-fuchsia-500 to-purple-800',
+    description: 'Videojuego',
+  },
+  {
+    id: 'photos',
+    name: 'Fotos',
+    icon: '🖼️',
+    color: 'from-pink-500 to-orange-700',
+    description: 'Galería de imágenes',
+  },
+  {
+    id: 'database',
+    name: 'Base de datos',
+    icon: '🗄️',
+    color: 'from-slate-500 to-cyan-800',
+    description: 'Gestor de base de datos',
   },
 ]

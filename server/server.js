@@ -2,6 +2,8 @@ import http from 'node:http'
 
 const PORT = Number(process.env.PORT || 3000)
 const SERVER_NAME = 'MiniOS Kernel'
+const RAM_TOTAL_MB = 1536
+const SWAP_TOTAL_MB = 8192
 
 const PRIORITY_ORDER = {
   alta: 0,
@@ -73,6 +75,41 @@ const APP_RESOURCE_PROFILE = {
     pages: 20,
     burst: 7,
   },
+  editor: {
+    ramMB: 260,
+    diskIO: '5 MB/s',
+    priority: 'media',
+    pages: 64,
+    burst: 13,
+  },
+  mail: {
+    ramMB: 210,
+    diskIO: '4 MB/s',
+    priority: 'media',
+    pages: 52,
+    burst: 10,
+  },
+  game: {
+    ramMB: 720,
+    diskIO: '12 MB/s',
+    priority: 'alta',
+    pages: 180,
+    burst: 20,
+  },
+  photos: {
+    ramMB: 280,
+    diskIO: '6 MB/s',
+    priority: 'baja',
+    pages: 70,
+    burst: 12,
+  },
+  database: {
+    ramMB: 420,
+    diskIO: '9 MB/s',
+    priority: 'alta',
+    pages: 105,
+    burst: 17,
+  },
 }
 
 const APP_DEFINITIONS = [
@@ -139,6 +176,41 @@ const APP_DEFINITIONS = [
     color: 'from-indigo-500 to-violet-900',
     description: 'Configuración del sistema',
   },
+  {
+    id: 'editor',
+    name: 'Editor',
+    icon: '📝',
+    color: 'from-orange-500 to-red-700',
+    description: 'Editor de texto',
+  },
+  {
+    id: 'mail',
+    name: 'Correo',
+    icon: '✉️',
+    color: 'from-sky-500 to-blue-800',
+    description: 'Cliente de correo',
+  },
+  {
+    id: 'game',
+    name: 'Juego',
+    icon: '🎮',
+    color: 'from-fuchsia-500 to-purple-800',
+    description: 'Videojuego',
+  },
+  {
+    id: 'photos',
+    name: 'Fotos',
+    icon: '🖼️',
+    color: 'from-pink-500 to-orange-700',
+    description: 'Galería de imágenes',
+  },
+  {
+    id: 'database',
+    name: 'Base de datos',
+    icon: '🗄️',
+    color: 'from-slate-500 to-cyan-800',
+    description: 'Gestor de base de datos',
+  },
 ]
 
 const persistedState = {
@@ -147,6 +219,9 @@ const persistedState = {
   isRunning: false,
   tick: 0,
   nextPid: 1,
+  swapIns: 0,
+  swapOuts: 0,
+  memoryEvent: null,
   processes: [],
 }
 
@@ -159,12 +234,81 @@ function getDiskRate(diskIO) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function getRamUsedMB() {
+  return persistedState.processes
+    .filter((process) => process.state !== 'terminado' && process.memoryLocation === 'ram')
+    .reduce((sum, process) => sum + process.ramMB, 0)
+}
+
+function swapOutProcess() {
+  const candidate = persistedState.processes
+    .filter(
+      (process) =>
+        process.state === 'listo' &&
+        process.memoryLocation === 'ram',
+    )
+    .sort(
+      (left, right) =>
+        PRIORITY_ORDER[right.priority] - PRIORITY_ORDER[left.priority] ||
+        right.ramMB - left.ramMB ||
+        right.arrivalOrder - left.arrivalOrder,
+    )[0]
+
+  if (!candidate) {
+    return false
+  }
+
+  persistedState.processes = persistedState.processes.map((process) =>
+    process.pid === candidate.pid
+      ? { ...process, state: 'suspendido', memoryLocation: 'swap', cpuPercent: 0 }
+      : process,
+  )
+  persistedState.swapOuts += 1
+  persistedState.memoryEvent = `Swap out: ${candidate.name} salió de RAM y pasó a swap para liberar ${candidate.ramMB} MB.`
+  return true
+}
+
+function placeInMemory(process) {
+  if (process.memoryLocation === 'ram') {
+    return
+  }
+
+  while (getRamUsedMB() + process.ramMB > RAM_TOTAL_MB && swapOutProcess()) {
+    // Make room by suspending the lowest-priority ready process.
+  }
+
+  if (getRamUsedMB() + process.ramMB <= RAM_TOTAL_MB) {
+    persistedState.processes = persistedState.processes.map((current) =>
+      current.pid === process.pid
+        ? { ...current, memoryLocation: 'ram', state: 'listo', cpuPercent: 5 }
+        : current,
+    )
+    persistedState.swapIns += 1
+    persistedState.memoryEvent = `Swap in: ${process.name} volvió de swap a RAM.`
+  }
+}
+
+function swapInReadyProcesses() {
+  const candidates = persistedState.processes
+    .filter((process) => process.state === 'suspendido')
+    .sort((left, right) => left.arrivalOrder - right.arrivalOrder)
+
+  candidates.forEach((process) => {
+    placeInMemory(process)
+  })
+}
+
 function buildStats() {
   const activeProcesses = persistedState.processes.filter(
     (process) => process.state !== 'terminado',
   )
   const runningProcess = activeProcesses.find((process) => process.state === 'ejecutando')
-  const totalRamMB = activeProcesses.reduce((sum, process) => sum + process.ramMB, 0)
+  const totalRamMB = activeProcesses
+    .filter((process) => process.memoryLocation === 'ram')
+    .reduce((sum, process) => sum + process.ramMB, 0)
+  const totalSwapMB = activeProcesses
+    .filter((process) => process.memoryLocation === 'swap')
+    .reduce((sum, process) => sum + process.ramMB, 0)
   const diskPercent = clamp(
     Math.round(
       activeProcesses.reduce((sum, process) => sum + getDiskRate(process.diskIO), 0) * 2.5,
@@ -184,7 +328,7 @@ function buildStats() {
   return {
     cpuPercent,
     ramUsedGB: Number((totalRamMB / 1024).toFixed(2)),
-    ramTotalGB: 4,
+    ramTotalGB: RAM_TOTAL_MB / 1024,
     diskPercent,
     runningProcess: runningProcess?.name ?? 'Ninguno',
     runningState: runningProcess?.state ?? 'listo',
@@ -195,6 +339,11 @@ function buildStats() {
       (sum, process) => sum + Math.floor(process.pages / 20),
       0,
     ),
+    swapUsedGB: Number((totalSwapMB / 1024).toFixed(2)),
+    swapTotalGB: SWAP_TOTAL_MB / 1024,
+    swapIns: persistedState.swapIns,
+    swapOuts: persistedState.swapOuts,
+    memoryEvent: persistedState.memoryEvent,
   }
 }
 
@@ -250,8 +399,10 @@ function releaseFromBlock() {
 function runSchedulerTick() {
   const before = [...persistedState.processes]
   persistedState.tick += 1
+  persistedState.memoryEvent = null
 
   releaseFromBlock()
+  swapInReadyProcesses()
 
   const currentRunning = persistedState.processes.find(
     (process) => process.state === 'ejecutando',
@@ -432,6 +583,9 @@ const server = http.createServer(async (request, response) => {
     persistedState.isRunning = false
     persistedState.tick = 0
     persistedState.nextPid = 1
+    persistedState.swapIns = 0
+    persistedState.swapOuts = 0
+    persistedState.memoryEvent = null
     persistedState.processes = []
     sendJson(response, 200, buildResponseBody())
     return
@@ -523,7 +677,7 @@ const server = http.createServer(async (request, response) => {
 
     const pid = persistedState.nextPid
     persistedState.nextPid += 1
-    persistedState.processes.push({
+    const newProcess = {
       pid,
       appId,
       name: APP_DEFINITIONS.find((app) => app.id === appId)?.name ?? appId,
@@ -538,7 +692,15 @@ const server = http.createServer(async (request, response) => {
       arrivalOrder: persistedState.processes.length + 1,
       quantumUsed: 0,
       blockedTicks: 0,
-    })
+      memoryLocation: 'ram',
+    }
+    if (getRamUsedMB() + newProcess.ramMB > RAM_TOTAL_MB) {
+      newProcess.memoryLocation = 'swap'
+      newProcess.state = 'suspendido'
+      newProcess.cpuPercent = 0
+      persistedState.memoryEvent = `Swap out: ${newProcess.name} se abrió directamente en swap porque no había RAM suficiente.`
+    }
+    persistedState.processes.push(newProcess)
 
     sendJson(response, 200, buildResponseBody())
     return

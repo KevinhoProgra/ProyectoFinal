@@ -3,6 +3,7 @@ export type ProcessState =
   | 'listo'
   | 'ejecutando'
   | 'bloqueado'
+  | 'suspendido'
   | 'terminado'
 
 export type Priority = 'alta' | 'media' | 'baja'
@@ -27,6 +28,7 @@ export interface Process {
   arrivalOrder: number
   quantumUsed: number
   blockedTicks: number
+  memoryLocation: 'ram' | 'swap'
 }
 
 export interface SystemStats {
@@ -40,6 +42,11 @@ export interface SystemStats {
   quantum: number
   tick: number
   pageFaults: number
+  swapUsedGB: number
+  swapTotalGB: number
+  swapIns: number
+  swapOuts: number
+  memoryEvent: string | null
 }
 
 export interface DesktopApp {

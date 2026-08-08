@@ -28,6 +28,12 @@ const stateStyles: Record<
     text: 'text-amber-300',
     dot: 'bg-amber-400',
   },
+  suspendido: {
+    label: 'En swap',
+    bg: 'bg-violet-500/20',
+    text: 'text-violet-300',
+    dot: 'bg-violet-400 animate-blink',
+  },
   terminado: {
     label: 'Terminado',
     bg: 'bg-rose-500/20',

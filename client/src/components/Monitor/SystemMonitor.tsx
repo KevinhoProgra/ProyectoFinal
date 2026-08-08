@@ -30,6 +30,46 @@ export function SystemMonitor({ stats }: SystemMonitorProps) {
           value={stats.diskPercent}
           color="amber"
         />
+        <ResourceBar
+          label="Swap"
+          value={stats.swapUsedGB}
+          max={stats.swapTotalGB}
+          unit="GB"
+          color="emerald"
+          animated={stats.swapUsedGB > 0}
+        />
+      </div>
+
+      <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-violet-300">
+            Memoria virtual
+          </h3>
+          <span className="text-[10px] text-slate-500">Intercambio automático</span>
+        </div>
+        <p className="mb-3 text-xs leading-relaxed text-slate-400">
+          Cuando la RAM se llena, MiniOS mueve procesos inactivos al disco
+          (swap) para liberar espacio. Al necesitarlos, los devuelve a RAM.
+        </p>
+        <div
+          className={`mb-3 rounded-md border px-3 py-2 text-xs ${
+            stats.memoryEvent
+              ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200'
+              : 'border-slate-700/40 bg-slate-900/30 text-slate-500'
+          }`}
+        >
+          {stats.memoryEvent ?? 'Sin intercambios en el último tick'}
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-center">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap in</p>
+            <p className="font-mono text-lg font-bold text-cyan-300">{stats.swapIns}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap out</p>
+            <p className="font-mono text-lg font-bold text-violet-300">{stats.swapOuts}</p>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-4">

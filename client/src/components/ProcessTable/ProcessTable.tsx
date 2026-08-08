@@ -30,6 +30,7 @@ export function ProcessTable({
               'Disco',
               'Prioridad',
               'Páginas',
+              'Memoria',
               'Acciones',
             ].map((col) => (
               <th
@@ -96,6 +97,17 @@ export function ProcessTable({
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-violet-400">
                   {process.pages}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded px-2 py-1 text-[10px] font-semibold ${
+                      process.memoryLocation === 'swap'
+                        ? 'bg-violet-500/15 text-violet-300'
+                        : 'bg-cyan-500/15 text-cyan-300'
+                    }`}
+                  >
+                    {process.memoryLocation === 'swap' ? 'DISCO / SWAP' : 'RAM'}
+                  </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
