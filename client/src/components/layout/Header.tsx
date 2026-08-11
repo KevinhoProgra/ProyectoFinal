@@ -1,9 +1,10 @@
 interface HeaderProps {
   isRunning: boolean
   tick: number
+  onLogout?: () => void
 }
 
-export function Header({ isRunning, tick }: HeaderProps) {
+export function Header({ isRunning, tick, onLogout }: HeaderProps) {
   return (
     <header className="flex items-center justify-between border-b border-slate-700/60 bg-slate-900/80 px-6 py-3 backdrop-blur-sm">
       <div className="flex items-center gap-3">
@@ -32,6 +33,15 @@ export function Header({ isRunning, tick }: HeaderProps) {
         <div className="rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-1.5 font-mono text-xs text-cyan-400">
           Tick: {tick}
         </div>
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+          >
+            Salir
+          </button>
+        )}
       </div>
     </header>
   )
