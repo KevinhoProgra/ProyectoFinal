@@ -9,6 +9,7 @@ import { Login, type AuthUser } from './components/login/login'
 import { desktopApps, initialSystemStats } from './data/mockData'
 import type { DesktopApp, Process, SchedulerAlgorithm, SystemStats } from './types'
 
+
 const SERVER_URL = 'http://127.0.0.1:3000'
 
 function App() {
