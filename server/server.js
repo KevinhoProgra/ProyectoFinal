@@ -317,10 +317,7 @@ function buildStats() {
     100,
   )
   const cpuPercent = clamp(
-    Math.round(
-      activeProcesses.reduce((sum, process) => sum + Math.max(0, process.cpuPercent), 0) /
-        Math.max(activeProcesses.length, 1),
-    ),
+    Math.round(runningProcess?.cpuPercent ?? 0),
     0,
     100,
   )
