@@ -5,12 +5,14 @@ import { Header } from './components/layout/Header'
 import { Panel } from './components/layout/Panel'
 import { SystemMonitor } from './components/Monitor/SystemMonitor'
 import { ProcessTable } from './components/ProcessTable/ProcessTable'
+import { Login, type AuthUser } from './components/login/login'
 import { desktopApps, initialSystemStats } from './data/mockData'
 import type { DesktopApp, Process, SchedulerAlgorithm, SystemStats } from './types'
 
 const SERVER_URL = 'http://127.0.0.1:3000'
 
 function App() {
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [processes, setProcesses] = useState<Process[]>([])
   const [stats, setStats] = useState<SystemStats>(initialSystemStats)
   const [isRunning, setIsRunning] = useState(false)
@@ -23,6 +25,17 @@ function App() {
     setToast(message)
     window.setTimeout(() => setToast(null), 2500)
   }, [])
+
+  const handleLogin = useCallback((authenticatedUser: AuthUser) => {
+    setUser(authenticatedUser)
+    showToast(`Bienvenido ${authenticatedUser.usuario}`)
+  }, [showToast])
+
+  const handleLogout = useCallback(() => {
+    setUser(null)
+    setSelectedAppId(null)
+    showToast('Sesión cerrada')
+  }, [showToast])
 
   const syncState = useCallback(async () => {
     try {
@@ -267,9 +280,13 @@ function App() {
     [showToast, syncState],
   )
 
+  if (!user) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <div className="flex h-full flex-col bg-gradient-to-br from-slate-950 via-[#0a0e17] to-slate-950">
-      <Header isRunning={isRunning} tick={stats.tick} />
+      <Header isRunning={isRunning} tick={stats.tick} onLogout={handleLogout} />
 
       <main className="flex flex-1 flex-col gap-4 overflow-hidden p-4">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
