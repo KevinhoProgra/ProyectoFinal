@@ -1,9 +1,20 @@
 import http from 'node:http'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const PORT = Number(process.env.PORT || 3000)
 const SERVER_NAME = 'MiniOS Kernel'
 const RAM_TOTAL_MB = 1536
 const SWAP_TOTAL_MB = 8192
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const LOGS_DIR = path.join(__dirname, 'logs')
+if (!fs.existsSync(LOGS_DIR)) {
+  fs.mkdirSync(LOGS_DIR, { recursive: true })
+}
+
+let sessionStartedAt = Date.now()
 
 const PRIORITY_ORDER = {
   alta: 0,
@@ -128,7 +139,6 @@ const APP_DEFINITIONS = [
   { id: 'photos', name: 'Fotos', icon: '🖼️', color: 'from-pink-500 to-orange-700', description: 'Galería de imágenes' },
   { id: 'database', name: 'Base de datos', icon: '🗄️', color: 'from-slate-500 to-cyan-800', description: 'Gestor de base de datos' },
 ]
-
 const persistedState = {
   algorithm: 'Round Robin',
   quantum: 3,
@@ -139,10 +149,8 @@ const persistedState = {
   swapOuts: 0,
   memoryEvent: null,
   processes: [],
-  // Contador global de "entradas a la cola de listos". Cada vez que un
-  // proceso pasa a estado 'listo' (se crea, se desbloquea, sale de swap,
-  // termina su ráfaga o es apartado de la CPU) recibe un readyStamp nuevo.
-  // Esto es lo que decide el orden real de la cola, no arrivalOrder.
+
+
   readyCounter: 0,
 }
 
@@ -458,6 +466,88 @@ function buildResponseBody() {
   }
 }
 
+function formatDuration(ms) {
+  const totalSeconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}m ${seconds}s`
+}
+//convertir milisegundos a minutos y segundos
+
+
+function saveSessionReport() {
+  const now = Date.now()
+  const durationMs = now - sessionStartedAt
+  const timestamp = new Date(now).toISOString()
+  const fileSafeTimestamp = timestamp.replace(/[:.]/g, '-')
+
+  const processes = persistedState.processes
+  const finished = processes.filter((process) => process.state === 'terminado')
+  const stillActive = processes.filter((process) => process.state !== 'terminado')
+
+  const lines = []
+  lines.push('==================================================')
+  lines.push(` REPORTE DE SESION - ${SERVER_NAME}`)
+  lines.push('==================================================')
+  lines.push(`Fecha/hora de cierre : ${timestamp}`)
+  lines.push(`Duracion de la sesion : ${formatDuration(durationMs)} (${durationMs} ms)`)
+  lines.push(`Ticks del scheduler   : ${persistedState.tick}`)
+  lines.push(`Algoritmo utilizado   : ${persistedState.algorithm}`)
+  if (persistedState.algorithm === 'Round Robin') {
+    lines.push(`Quantum               : ${persistedState.quantum}`)
+  }
+  lines.push(`Estaba corriendo?     : ${persistedState.isRunning ? 'Si' : 'No'}`)
+  lines.push('')
+  lines.push(`Total de procesos creados en la sesion: ${processes.length}`)
+  lines.push(`  - Terminados: ${finished.length}`)
+  lines.push(`  - Sin terminar (listo/ejecutando/bloqueado/suspendido): ${stillActive.length}`)
+  lines.push('')
+  lines.push('--------------------------------------------------')
+  lines.push(' DETALLE DE PROCESOS')
+  lines.push('--------------------------------------------------')
+
+  if (processes.length === 0) {
+    lines.push('(No se ejecuto ningun proceso en esta sesion)')
+  } else {
+    processes.forEach((process) => {
+      lines.push(`PID ${process.pid} - ${process.name} (${process.appId})`)
+      lines.push(`  Estado final       : ${process.state}`)
+      lines.push(`  Prioridad          : ${process.priority}`)
+      lines.push(`  RAM asignada       : ${process.ramMB} MB`)
+      lines.push(`  Disk I/O           : ${process.diskIO}`)
+      lines.push(`  Rafaga (burst)     : ${process.burst}`)
+      lines.push(`  Rafaga restante    : ${process.remainingBurst}`)
+      lines.push(`  Ciclos restantes   : ${process.cyclesLeft}`)
+      lines.push(`  Ubicacion memoria  : ${process.memoryLocation}`)
+      lines.push(`  Orden de llegada   : ${process.arrivalOrder}`)
+      lines.push('')
+    })
+  }
+
+  lines.push('--------------------------------------------------')
+  lines.push(' MEMORIA')
+  lines.push('--------------------------------------------------')
+  lines.push(`Swap-ins  : ${persistedState.swapIns}`)
+  lines.push(`Swap-outs : ${persistedState.swapOuts}`)
+  if (persistedState.memoryEvent) {
+    lines.push(`Ultimo evento de memoria: ${persistedState.memoryEvent}`)
+  }
+  lines.push('==================================================')
+
+  const fileName = `session_${fileSafeTimestamp}.txt`
+  const filePath = path.join(LOGS_DIR, fileName)
+
+  try {
+    fs.writeFileSync(filePath, lines.join('\n'), 'utf-8')
+    console.log(`Reporte de sesion guardado en: ${filePath}`)
+  } catch (error) {
+    console.error('No se pudo guardar el reporte de sesion:', error)
+  }
+
+  return fileName
+}
+
+// Arma el contenido del reporte de sesión con el estado ANTES de limpiarlo
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -525,6 +615,8 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (url.pathname === '/api/simulation/reset' && request.method === 'POST') {
+    const savedFileName = saveSessionReport()
+    sessionStartedAt = Date.now()
     persistedState.algorithm = 'Round Robin'
     persistedState.quantum = 3
     persistedState.isRunning = false
@@ -535,7 +627,40 @@ const server = http.createServer(async (request, response) => {
     persistedState.memoryEvent = null
     persistedState.processes = []
     persistedState.readyCounter = 0
-    sendJson(response, 200, buildResponseBody())
+
+    sendJson(response, 200, { ...buildResponseBody(), savedReport: savedFileName })
+    return
+  }
+
+    if (url.pathname === '/api/reports' && request.method === 'GET') {
+    const files = fs
+      .readdirSync(LOGS_DIR)
+      .filter((name) => name.endsWith('.txt'))
+      .sort()
+      .reverse()
+    sendJson(response, 200, { reports: files })
+    return
+  }
+
+    if (url.pathname.startsWith('/api/reports/') && request.method === 'GET') {
+    const fileName = decodeURIComponent(url.pathname.replace('/api/reports/', ''))
+    // Evita path traversal: solo permitimos nombres de archivo simples.
+    if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+      sendJson(response, 400, { error: 'Nombre de archivo invalido' })
+      return
+    }
+    const filePath = path.join(LOGS_DIR, fileName)
+    if (!fs.existsSync(filePath)) {
+      sendJson(response, 404, { error: 'Reporte no encontrado' })
+      return
+    }
+    const content = fs.readFileSync(filePath, 'utf-8')
+    response.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Access-Control-Allow-Origin': '*',
+    })
+    response.end(content)
     return
   }
 
@@ -637,9 +762,6 @@ const server = http.createServer(async (request, response) => {
       pages: profile.pages,
       burst: profile.burst,
       remainingBurst: profile.burst,
-      // Número de ráfagas de CPU que este proceso necesita completar antes
-      // de terminar por sí solo (simula que un programa hace una cantidad
-      // finita de trabajo, no que corre para siempre).
       cyclesLeft: 2 + Math.floor(Math.random() * 3),
       arrivalOrder: persistedState.processes.length + 1,
       readyStamp: nextReadyStamp(),

@@ -9,6 +9,7 @@ interface SimulationControlsProps {
   onReset: () => void
   onAlgorithmChange: (algorithm: SchedulerAlgorithm) => void
   onQuantumChange: (quantum: number) => void
+  onDownloadLastReport?: () => void
 }
 
 const algorithmOptions: SchedulerAlgorithm[] = [
@@ -27,6 +28,7 @@ export function SimulationControls({
   onReset,
   onAlgorithmChange,
   onQuantumChange,
+  onDownloadLastReport,
 }: SimulationControlsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -86,7 +88,17 @@ export function SimulationControls({
         className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-slate-600/40 transition-all hover:bg-rose-500/20 hover:text-rose-300 hover:ring-rose-500/40"
       >
         ↺ Reset
-      </button>
+</button>
+      {onDownloadLastReport && (
+        <button
+          type="button"
+          onClick={onDownloadLastReport}
+          className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-slate-600/40 transition-all hover:bg-cyan-500/20 hover:text-cyan-300 hover:ring-cyan-500/40"
+          title="Descargar el último reporte de sesión guardado"
+        >
+          ⬇ Reporte
+        </button>
+      )}
     </div>
   )
 }

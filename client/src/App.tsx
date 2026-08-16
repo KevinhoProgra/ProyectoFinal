@@ -153,6 +153,7 @@ function App() {
     }
   }, [algorithm, showToast, syncState])
 
+
   const handleReset = useCallback(async () => {
     try {
       const response = await fetch(`${SERVER_URL}/api/simulation/reset`, {
@@ -166,15 +167,43 @@ function App() {
         throw new Error(`HTTP ${response.status}`)
       }
 
+      const payload = (await response.json().catch(() => ({}))) as { savedReport?: string }
+
       setSelectedAppId(null)
       await syncState()
-      showToast('Kernel reiniciado a estado inicial')
+      showToast(
+        payload.savedReport
+          ? `Simulación reiniciada. Reporte de sesión guardado en ${payload.savedReport}`
+          : 'Simulación reiniciada',
+      )
     } catch (error) {
       console.error('No pude reiniciar la simulación', error)
       showToast('No se pudo reiniciar')
     }
   }, [showToast, syncState])
 
+  const handleDownloadLastReport = useCallback(async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/reports`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const payload = (await response.json()) as { reports: string[] }
+      const latest = payload.reports[0]
+
+      if (!latest) {
+        showToast('Todavía no hay reportes guardados')
+        return
+      }
+
+      window.open(`${SERVER_URL}/api/reports/${encodeURIComponent(latest)}`, '_blank')
+    } catch (error) {
+      console.error('No pude descargar el reporte', error)
+      showToast('No se pudo descargar el reporte')
+    }
+  }, [showToast])
+  
   const handleAlgorithmChange = useCallback(
     async (nextAlgorithm: SchedulerAlgorithm) => {
       setAlgorithm(nextAlgorithm)
@@ -310,6 +339,7 @@ function App() {
                 onReset={handleReset}
                 onAlgorithmChange={handleAlgorithmChange}
                 onQuantumChange={handleQuantumChange}
+                onDownloadLastReport={handleDownloadLastReport}
               />
             }
           >
