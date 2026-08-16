@@ -113,104 +113,20 @@ const APP_RESOURCE_PROFILE = {
 }
 
 const APP_DEFINITIONS = [
-  {
-    id: 'word',
-    name: 'Word',
-    icon: '📄',
-    color: 'from-blue-600 to-blue-800',
-    description: 'Procesador de texto',
-  },
-  {
-    id: 'chrome',
-    name: 'Chrome',
-    icon: '🌐',
-    color: 'from-emerald-500 to-teal-700',
-    description: 'Navegador web',
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify',
-    icon: '🎵',
-    color: 'from-green-500 to-green-800',
-    description: 'Reproductor de música',
-  },
-  {
-    id: 'explorer',
-    name: 'Explorador',
-    icon: '📁',
-    color: 'from-amber-500 to-orange-700',
-    description: 'Administrador de archivos',
-  },
-  {
-    id: 'calculator',
-    name: 'Calculadora',
-    icon: '🧮',
-    color: 'from-violet-500 to-purple-800',
-    description: 'Calculadora del sistema',
-  },
-  {
-    id: 'terminal',
-    name: 'Terminal',
-    icon: '💻',
-    color: 'from-slate-600 to-slate-900',
-    description: 'Consola del sistema',
-  },
-  {
-    id: 'vscode',
-    name: 'VSCode',
-    icon: '🧩',
-    color: 'from-cyan-500 to-blue-900',
-    description: 'Editor de código',
-  },
-  {
-    id: 'paint',
-    name: 'Paint',
-    icon: '🎨',
-    color: 'from-pink-500 to-rose-900',
-    description: 'Editor gráfico básico',
-  },
-  {
-    id: 'settings',
-    name: 'Ajustes',
-    icon: '⚙️',
-    color: 'from-indigo-500 to-violet-900',
-    description: 'Configuración del sistema',
-  },
-  {
-    id: 'editor',
-    name: 'Editor',
-    icon: '📝',
-    color: 'from-orange-500 to-red-700',
-    description: 'Editor de texto',
-  },
-  {
-    id: 'mail',
-    name: 'Correo',
-    icon: '✉️',
-    color: 'from-sky-500 to-blue-800',
-    description: 'Cliente de correo',
-  },
-  {
-    id: 'game',
-    name: 'Juego',
-    icon: '🎮',
-    color: 'from-fuchsia-500 to-purple-800',
-    description: 'Videojuego',
-  },
-  {
-    id: 'photos',
-    name: 'Fotos',
-    icon: '🖼️',
-    color: 'from-pink-500 to-orange-700',
-    description: 'Galería de imágenes',
-  },
-  {
-    id: 'database',
-    name: 'Base de datos',
-    icon: '🗄️',
-    color: 'from-slate-500 to-cyan-800',
-    description: 'Gestor de base de datos',
-  },
+  { id: 'word', name: 'Word', icon: '📄', color: 'from-blue-600 to-blue-800', description: 'Procesador de texto' },
+  { id: 'chrome', name: 'Chrome', icon: '🌐', color: 'from-emerald-500 to-teal-700', description: 'Navegador web' },
+  { id: 'spotify', name: 'Spotify', icon: '🎵', color: 'from-green-500 to-green-800', description: 'Reproductor de música' },
+  { id: 'explorer', name: 'Explorador', icon: '📁', color: 'from-amber-500 to-orange-700', description: 'Administrador de archivos' },
+  { id: 'calculator', name: 'Calculadora', icon: '🧮', color: 'from-violet-500 to-purple-800', description: 'Calculadora del sistema' },
+  { id: 'terminal', name: 'Terminal', icon: '💻', color: 'from-slate-600 to-slate-900', description: 'Consola del sistema' },
+  { id: 'vscode', name: 'VSCode', icon: '🧩', color: 'from-cyan-500 to-blue-900', description: 'Editor de código' },
+  { id: 'paint', name: 'Paint', icon: '🎨', color: 'from-pink-500 to-rose-900', description: 'Editor gráfico básico' },
+  { id: 'settings', name: 'Ajustes', icon: '⚙️', color: 'from-indigo-500 to-violet-900', description: 'Configuración del sistema' },
+  { id: 'editor', name: 'Editor', icon: '📝', color: 'from-orange-500 to-red-700', description: 'Editor de texto' },
+  { id: 'mail', name: 'Correo', icon: '✉️', color: 'from-sky-500 to-blue-800', description: 'Cliente de correo' },
+  { id: 'game', name: 'Juego', icon: '🎮', color: 'from-fuchsia-500 to-purple-800', description: 'Videojuego' },
+  { id: 'photos', name: 'Fotos', icon: '🖼️', color: 'from-pink-500 to-orange-700', description: 'Galería de imágenes' },
+  { id: 'database', name: 'Base de datos', icon: '🗄️', color: 'from-slate-500 to-cyan-800', description: 'Gestor de base de datos' },
 ]
 
 const persistedState = {
@@ -223,6 +139,16 @@ const persistedState = {
   swapOuts: 0,
   memoryEvent: null,
   processes: [],
+  // Contador global de "entradas a la cola de listos". Cada vez que un
+  // proceso pasa a estado 'listo' (se crea, se desbloquea, sale de swap,
+  // termina su ráfaga o es apartado de la CPU) recibe un readyStamp nuevo.
+  // Esto es lo que decide el orden real de la cola, no arrivalOrder.
+  readyCounter: 0,
+}
+
+function nextReadyStamp() {
+  persistedState.readyCounter += 1
+  return persistedState.readyCounter
 }
 
 function clamp(value, min, max) {
@@ -280,7 +206,7 @@ function placeInMemory(process) {
   if (getRamUsedMB() + process.ramMB <= RAM_TOTAL_MB) {
     persistedState.processes = persistedState.processes.map((current) =>
       current.pid === process.pid
-        ? { ...current, memoryLocation: 'ram', state: 'listo', cpuPercent: 5 }
+        ? { ...current, memoryLocation: 'ram', state: 'listo', cpuPercent: 5, readyStamp: nextReadyStamp() }
         : current,
     )
     persistedState.swapIns += 1
@@ -355,17 +281,22 @@ function chooseNextProcess() {
 
   const sorted = [...readyProcesses].sort((left, right) => {
     if (persistedState.algorithm === 'SJF') {
-      return left.remainingBurst - right.remainingBurst || left.arrivalOrder - right.arrivalOrder
+      return (
+        left.remainingBurst - right.remainingBurst ||
+        left.readyStamp - right.readyStamp
+      )
     }
 
     if (persistedState.algorithm === 'Prioridades') {
       return (
         PRIORITY_ORDER[left.priority] - PRIORITY_ORDER[right.priority] ||
-        left.arrivalOrder - right.arrivalOrder
+        left.readyStamp - right.readyStamp
       )
     }
 
-    return left.arrivalOrder - right.arrivalOrder
+    // Round Robin: el orden es SIEMPRE el de la cola de listos
+    // (readyStamp), nunca el orden fijo de llegada de la app.
+    return left.readyStamp - right.readyStamp
   })
 
   return sorted[0]
@@ -383,6 +314,7 @@ function releaseFromBlock() {
         state: 'listo',
         blockedTicks: 0,
         cpuPercent: 6,
+        readyStamp: nextReadyStamp(),
       }
     }
 
@@ -416,10 +348,23 @@ function runSchedulerTick() {
     }
 
     if (runningNext.remainingBurst <= 0) {
-      runningNext.remainingBurst = currentRunning.burst
-      runningNext.state = 'listo'
-      runningNext.quantumUsed = 0
-      runningNext.cpuPercent = clamp(currentRunning.cpuPercent - 4, 8, 92)
+      runningNext.cyclesLeft = currentRunning.cyclesLeft - 1
+
+      if (runningNext.cyclesLeft <= 0) {
+        // El proceso ya completó todo el trabajo que tenía que hacer:
+        // termina de verdad, no vuelve a la cola.
+        runningNext.state = 'terminado'
+        runningNext.cpuPercent = 0
+        runningNext.quantumUsed = 0
+        runningNext.remainingBurst = 0
+      } else {
+        runningNext.remainingBurst = currentRunning.burst
+        runningNext.state = 'listo'
+        runningNext.quantumUsed = 0
+        runningNext.cpuPercent = clamp(currentRunning.cpuPercent - 4, 8, 92)
+        runningNext.readyStamp = nextReadyStamp()
+      }
+
       persistedState.processes = persistedState.processes.map((process) =>
         process.pid === currentPid ? runningNext : process,
       )
@@ -448,6 +393,10 @@ function runSchedulerTick() {
       if (shouldPreempt) {
         runningNext.state = 'listo'
         runningNext.quantumUsed = 0
+        // Al ceder la CPU, el proceso se reincorpora al FINAL de la cola
+        // de listos: se le asigna un readyStamp nuevo para que no vuelva
+        // a ser elegido antes que los procesos que ya esperaban.
+        runningNext.readyStamp = nextReadyStamp()
         persistedState.processes = persistedState.processes.map((process) =>
           process.pid === currentPid ? runningNext : process,
         )
@@ -478,6 +427,7 @@ function runSchedulerTick() {
           ...process,
           state: 'listo',
           quantumUsed: 0,
+          readyStamp: nextReadyStamp(),
         }
       }
 
@@ -584,6 +534,7 @@ const server = http.createServer(async (request, response) => {
     persistedState.swapOuts = 0
     persistedState.memoryEvent = null
     persistedState.processes = []
+    persistedState.readyCounter = 0
     sendJson(response, 200, buildResponseBody())
     return
   }
@@ -686,7 +637,12 @@ const server = http.createServer(async (request, response) => {
       pages: profile.pages,
       burst: profile.burst,
       remainingBurst: profile.burst,
+      // Número de ráfagas de CPU que este proceso necesita completar antes
+      // de terminar por sí solo (simula que un programa hace una cantidad
+      // finita de trabajo, no que corre para siempre).
+      cyclesLeft: 2 + Math.floor(Math.random() * 3),
       arrivalOrder: persistedState.processes.length + 1,
+      readyStamp: nextReadyStamp(),
       quantumUsed: 0,
       blockedTicks: 0,
       memoryLocation: 'ram',
