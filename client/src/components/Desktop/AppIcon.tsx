@@ -7,6 +7,8 @@ interface AppIconProps {
 }
 
 export function AppIcon({ app, onLaunch, isSelected }: AppIconProps) {
+  const isImageIcon = /\.(png|jpe?g|gif|svg|webp|avif)(\?.*)?$|^data:image\//i.test(String(app.icon))
+
   return (
     <button
       type="button"
@@ -18,7 +20,15 @@ export function AppIcon({ app, onLaunch, isSelected }: AppIconProps) {
       <div
         className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${app.color} text-2xl shadow-lg transition-transform duration-200 group-hover:scale-105 group-active:scale-95`}
       >
-        {app.icon}
+        {isImageIcon ? (
+          <img
+            src={String(app.icon)}
+            alt={app.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-2xl">{app.icon}</span>
+        )}
       </div>
       <span className="text-center text-xs font-medium text-slate-200 group-hover:text-white">
         {app.name}

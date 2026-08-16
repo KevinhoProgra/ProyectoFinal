@@ -1,4 +1,16 @@
 import type { DesktopApp, Process, SystemStats } from '../types'
+import wordIcon from '../assets/icons/word.png'
+import chromeIcon from '../assets/icons/Chrome.png'
+import settingsIcon from '../assets/icons/settings.png'
+import spotifyIcon from '../assets/icons/spotify.png'
+import explorerIcon from '../assets/icons/explorer.png'
+import cmdIcon from '../assets/icons/cmd.png'
+import vscodeIcon from '../assets/icons/vscode.png'
+import paintIcon from '../assets/icons/paint.png'
+import editorIcon from '../assets/icons/editor.png'
+import mailIcon from '../assets/icons/email.png'
+import photosIcon from '../assets/icons/fotos.png'
+import databaseIcon from '../assets/icons/database.png'
 
 export const initialProcesses: Process[] = [
   {
@@ -73,28 +85,28 @@ export const desktopApps: DesktopApp[] = [
   {
     id: 'word',
     name: 'Word',
-    icon: '📄',
+    icon: wordIcon,
     color: 'from-blue-600 to-blue-800',
     description: 'Procesador de texto',
   },
   {
     id: 'chrome',
     name: 'Chrome',
-    icon: '🌐',
+    icon: chromeIcon,
     color: 'from-emerald-500 to-teal-700',
     description: 'Navegador web',
   },
   {
     id: 'spotify',
     name: 'Spotify',
-    icon: '🎵',
+    icon: spotifyIcon,
     color: 'from-green-500 to-green-800',
     description: 'Reproductor de música',
   },
   {
     id: 'explorer',
     name: 'Explorador',
-    icon: '📁',
+    icon: explorerIcon,
     color: 'from-amber-500 to-orange-700',
     description: 'Administrador de archivos',
   },
@@ -108,42 +120,42 @@ export const desktopApps: DesktopApp[] = [
   {
     id: 'terminal',
     name: 'Terminal',
-    icon: '💻',
+    icon: cmdIcon,
     color: 'from-slate-600 to-slate-900',
     description: 'Consola del sistema',
   },
   {
     id: 'vscode',
     name: 'VSCode',
-    icon: '🧩',
+    icon: vscodeIcon,
     color: 'from-cyan-500 to-blue-900',
     description: 'Editor de código',
   },
   {
     id: 'paint',
     name: 'Paint',
-    icon: '🎨',
+    icon: paintIcon,
     color: 'from-pink-500 to-rose-900',
     description: 'Editor gráfico básico',
   },
   {
     id: 'settings',
     name: 'Ajustes',
-    icon: '⚙️',
+    icon: settingsIcon,
     color: 'from-indigo-500 to-violet-900',
     description: 'Configuración del sistema',
   },
   {
     id: 'editor',
     name: 'Editor',
-    icon: '📝',
+    icon: editorIcon,
     color: 'from-orange-500 to-red-700',
     description: 'Editor de texto',
   },
   {
     id: 'mail',
     name: 'Correo',
-    icon: '✉️',
+    icon: mailIcon,
     color: 'from-sky-500 to-blue-800',
     description: 'Cliente de correo',
   },
@@ -157,14 +169,14 @@ export const desktopApps: DesktopApp[] = [
   {
     id: 'photos',
     name: 'Fotos',
-    icon: '🖼️',
+    icon: photosIcon,
     color: 'from-pink-500 to-orange-700',
     description: 'Galería de imágenes',
   },
   {
     id: 'database',
     name: 'Base de datos',
-    icon: '🗄️',
+    icon: databaseIcon,
     color: 'from-slate-500 to-cyan-800',
     description: 'Gestor de base de datos',
   },
