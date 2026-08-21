@@ -1,199 +1,201 @@
-
 # Proyecto Final MiniOS
 
-Aplicación web desarrollada como proyecto final para simular el funcionamiento básico de un sistema operativo, permitiendo visualizar y administrar procesos, monitorear recursos del sistema.
+Aplicación web desarrollada como proyecto final para simular el funcionamiento básico de un sistema operativo. Permite visualizar y administrar procesos, ejecutar algoritmos de planificación y monitorear recursos del sistema.
 
-El proyecto está dividido en un cliente (frontend) y un servidor (backend), manteniendo separada la interfaz de usuario de la lógica del servidor.
+El proyecto está dividido en un cliente frontend y un servidor backend.
 
+## Tecnologías
 
+- **Cliente:** React, TypeScript, Vite y Tailwind CSS
+- **Servidor:** Node.js y JavaScript
 
-
-## Tech Stack
-
-**Client:** React, TypeScript, Vite, CSS, JavaScript
-
-**Server:** Node.js, JavaScript
-
-
-## Authors
+## Autores
 
 - [@KevinhoProgra](https://github.com/KevinhoProgra)
 - [@KaelCarranza](https://github.com/KaelCarranza)
 - [@keymoa22](https://github.com/keymoa22)
 
+## Requisitos
 
+- Node.js instalado
 
-## Documentation
+## Instalación
 
-[Documentation]([https://github.com/KevinhoProgra/ProyectoFinal/blob/main/Proyecto%20Final%20Documentacion.pdf])
-
-
-## Installation
-
-Install my-project with npm
+Instala las dependencias del cliente:
 
 ```bash
-  cd ProyectoFinal
-  cd Client
-  npm install
+cd client
+npm install
 ```
 
+El servidor no utiliza dependencias externas.
 
-    
-## Deployment
+## Ejecución local
 
-To deploy this project run
+Abre dos terminales desde la carpeta raíz del proyecto.
+
+En la primera, inicia el backend:
 
 ```bash
-  cd client
-  npm run dev
+cd server
+npm start
 ```
+
+En la segunda, inicia el frontend:
 
 ```bash
-  cd server
-  npm start
+cd client
+npm run dev
 ```
 
+El cliente estará disponible en `http://localhost:5173` y se conectará al servidor en `http://127.0.0.1:3000`.
 
-## Project Structure
+Para crear una compilación de producción del cliente:
+
+```bash
+cd client
+npm run build
+```
+
+## Estructura del proyecto
 
 ```text
-ProjectFinal/
-│
-├── client/
+ProyectoFinal/
+├── client/              # Aplicación React
 │   ├── public/
-│   │
 │   ├── src/
-│   │   ├── assets/
-│   │   │
-│   │   ├── components/
-│   │   │   ├── controls/
-│   │   │   ├── Desktop/
-│   │   │   ├── layout/
-│   │   │   ├── login/
-│   │   │   ├── Monitor/
-│   │   │   └── ProcessTable/
-│   │   │
-│   │   ├── data/
-│   │   ├── Styles/
-│   │   ├── types/
-│   │   ├── utils/
-│   │   │
-│   │   ├── App.tsx
-│   │   ├── index.css
-│   │   └── main.tsx
-│   │
 │   ├── package.json
 │   └── vite.config.ts
-│
-├── server/
+├── server/              # API y simulador del sistema
+│   ├── logs/            # Reportes de sesión generados
 │   ├── server.js
 │   └── package.json
-│
-├── shared/
-│
+├── shared/              # Reservado para tipos o utilidades compartidas
 ├── .gitignore
 └── README.md
 ```
-## API Reference
 
-#### Get system state
+## API
 
-```http
-  GET /api/state
-```
+Todas las rutas utilizan el servidor `http://127.0.0.1:3000`.
 
-Devuelve el estado completo del sistema: procesos activos, estadísticas (CPU, RAM, disco), algoritmo de planificación y catálogo de apps.
-
-No requiere parámetros.
-
-#### Get available apps
+### Consultar el estado del sistema
 
 ```http
-  GET /api/apps
+GET /api/state
 ```
 
-Devuelve el catálogo de aplicaciones disponibles para abrir (Word, Chrome, Spotify, etc).
+Devuelve los procesos, las estadísticas de CPU/RAM/disco, la configuración del planificador y el catálogo de aplicaciones.
 
-No requiere parámetros.
-
-#### Open an app
+### Consultar aplicaciones disponibles
 
 ```http
-  POST /api/apps/open
+GET /api/apps
 ```
 
-| Parameter | Type     | Description                                  |
-| :-------- | :------- | :-------------------------------------------- |
-| `appId`   | `string` | **Required**. Id de la app a abrir (`word`, `chrome`, `spotify`, `explorer`, `calculator`, `terminal`, `vscode`, `paint`, `settings`) |
+Devuelve el catálogo de aplicaciones que se pueden abrir.
 
-#### Update process
+### Abrir una aplicación
 
 ```http
-  POST /api/processes
+POST /api/apps/open
 ```
 
-| Parameter | Type     | Description                                          |
-| :-------- | :------- | :---------------------------------------------------- |
-| `pid`     | `number` | **Required**. Id del proceso                          |
-| `action`  | `string` | **Required**. `terminate` para finalizar, `cleanup` para eliminar un proceso ya terminado |
+Body JSON:
 
-#### Toggle simulation
+```json
+{
+  "appId": "chrome"
+}
+```
+
+Aplicaciones disponibles: `word`, `chrome`, `spotify`, `explorer`, `calculator`, `terminal`, `vscode`, `paint`, `settings`, `editor`, `mail`, `game`, `photos` y `database`.
+
+### Actualizar un proceso
 
 ```http
-  POST /api/simulation/toggle
+POST /api/processes
 ```
 
-| Parameter   | Type      | Description                                              |
-| :---------- | :-------- | :--------------------------------------------------------- |
-| `isRunning` | `boolean` | Opcional. Si se omite, invierte el estado actual (correr/pausar) |
+Body JSON:
 
-#### Step simulation
+```json
+{
+  "pid": 1,
+  "action": "terminate"
+}
+```
+
+`action` puede ser `terminate` para finalizar el proceso o `cleanup` para eliminar un proceso ya terminado.
+
+### Iniciar o pausar la simulación
 
 ```http
-  POST /api/simulation/step
+POST /api/simulation/toggle
 ```
 
-Ejecuta manualmente un ciclo (tick) del planificador.
+Body JSON opcional:
 
-No requiere parámetros.
+```json
+{
+  "isRunning": true
+}
+```
 
-#### Reset simulation
+Si se omite el cuerpo, se invierte el estado actual.
+
+### Ejecutar un paso
 
 ```http
-  POST /api/simulation/reset
+POST /api/simulation/step
 ```
 
-Reinicia la simulación a sus valores por defecto (Round Robin, quantum 3, sin procesos).
+Ejecuta manualmente un ciclo del planificador. No requiere parámetros.
 
-No requiere parámetros.
-
-#### Update scheduler config
+### Reiniciar la simulación
 
 ```http
-  POST /api/simulation/config
+POST /api/simulation/reset
 ```
 
-| Parameter   | Type     | Description                                                       |
-| :---------- | :------- | :------------------------------------------------------------------ |
-| `algorithm` | `string` | Opcional. `Round Robin`, `SJF` o `Prioridades`                     |
-| `quantum`   | `number` | Opcional. Entero mínimo 1 (usado solo en Round Robin)               |
+Reinicia la simulación a sus valores predeterminados y guarda un reporte de la sesión anterior.
 
+### Cambiar la configuración del planificador
 
-## Features
+```http
+POST /api/simulation/config
+```
 
-- Simulación en tiempo real de un planificador de procesos (scheduler)
-- Soporte para múltiples algoritmos de planificación: Round Robin, SJF y Prioridades
-- Configuración de quantum para Round Robin
-- Panel de monitoreo del sistema (uso de CPU, RAM y disco en vivo)
-- Tabla de procesos con estados (nuevo, listo, ejecutando, bloqueado, terminado)
-- Apertura y cierre de aplicaciones simuladas (Word, Chrome, Spotify, Explorador, Calculadora, Terminal, VSCode, Paint, Ajustes)
-- Escritorio interactivo con íconos de aplicaciones
-- Autenticación de usuarios con inicio de sesión
-- Control manual de la simulación (paso a paso, iniciar/pausar, reiniciar)
+Body JSON:
 
+```json
+{
+  "algorithm": "Round Robin",
+  "quantum": 3
+}
+```
 
-## Screenshots
+Los algoritmos disponibles son `Round Robin`, `SJF` y `Prioridades`. El quantum debe ser un número mínimo de `1`; la interfaz limita su valor máximo a `10`.
 
-![App Screenshot](https://dummyimage.com/468x300?text=App+Screenshot+Here)
+### Consultar y descargar reportes
 
+```http
+GET /api/reports
+GET /api/reports/:fileName
+```
+
+La primera ruta devuelve la lista de reportes guardados y la segunda descarga un reporte específico.
+
+## Funcionalidades
+
+- Simulación en tiempo real de un planificador de procesos
+- Algoritmos Round Robin, SJF y Prioridades
+- Configuración del quantum de Round Robin
+- Monitoreo de CPU, RAM y disco
+- Gestión de memoria RAM y swap
+- Tabla de procesos con estados `nuevo`, `listo`, `ejecutando`, `bloqueado`, `suspendido` y `terminado`
+- Apertura y cierre de aplicaciones simuladas
+- Generación y descarga de reportes de sesión
+- Escritorio interactivo
+- Autenticación de usuarios
+- Control manual de la simulación
